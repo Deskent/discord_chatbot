@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+/proxies.txt
+/tokens.txt
+/vocabulary.txt
+/frequency.txt
+/aaa.json
+.idea/
