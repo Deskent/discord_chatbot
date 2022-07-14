@@ -7,13 +7,15 @@ from pydantic import BaseSettings
 from myloguru.my_loguru import get_logger
 
 
-# Constants
+# constants
 DISCORD_BASE_URL: str = f'https://discord.com/api/v9/channels/'
 
 
 class Settings(BaseSettings):
+    TELEBOT_TOKEN: str
+    ADMIN: str
+    PARSING_TOKEN: str
     LOGGING_LEVEL: int = 20
-    TELEBOT_TOKEN: str = ''
     DEBUG: bool = False
     VOCABULARY_PATH_FILE: str = "vocabulary.txt"
     TOKENS_PATH_FILE: str = "tokens.txt"
@@ -22,8 +24,6 @@ class Settings(BaseSettings):
     MESSAGES_COUNT: int = 1000
     MIN_PAUSE: int = 1
     MAX_PAUSE: int = 3600
-    ADMIN: str = ''
-    PARSING_TOKEN: str
 
 
 settings = Settings(_env_file='.env', _env_file_encoding='utf-8')
