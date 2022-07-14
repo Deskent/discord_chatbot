@@ -2,10 +2,10 @@ import os.path
 import random
 from typing import List, Dict
 
-from requesters import PostRequest, GetRequest
-from config import logger, settings, DISCORD_BASE_URL
+from discord_chatbot.requesters import PostRequest, GetRequest
+from discord_chatbot.config import logger, settings, DISCORD_BASE_URL
 
-from vocabulary import Vocabulary
+from discord_chatbot.vocabulary import Vocabulary
 
 
 class DiscordBot:

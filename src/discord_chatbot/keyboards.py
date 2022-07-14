@@ -2,11 +2,10 @@ from dataclasses import dataclass
 from typing import Union
 
 from aiogram.types import (
-    ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton,
-    ReplyKeyboardRemove
+    ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup
 )
 
-from config import logger
+from discord_chatbot.config import logger
 
 
 def default_keyboard() -> ReplyKeyboardMarkup:

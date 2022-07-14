@@ -1,6 +1,6 @@
 import aiogram.utils.exceptions
 
-from config import logger, bot
+from discord_chatbot.config import logger, bot
 
 
 @logger.catch

@@ -9,7 +9,7 @@ command = [
 print("Install dependents...")
 success = subprocess.run(command, stdout=subprocess.DEVNULL, shell=True)
 
-from runner import start_bot
+from discord_chatbot.runner import start_bot
 
 if success.returncode:
     exit(success.returncode)

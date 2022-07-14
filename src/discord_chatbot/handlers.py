@@ -6,11 +6,11 @@ from aiogram.dispatcher.filters import Text
 from aiogram.types import Message, CallbackQuery
 from aiogram.dispatcher import FSMContext
 
-from discord_bot import DiscordBot, ParserBot
-from states import UserStates
-from utils import check_is_int
-from keyboards import StartMenu
-from config import logger, Dispatcher, bot, settings
+from discord_chatbot.discord_bot import DiscordBot, ParserBot
+from discord_chatbot.states import UserStates
+from discord_chatbot.utils import check_is_int
+from discord_chatbot.keyboards import StartMenu
+from discord_chatbot.config import logger, Dispatcher, bot, settings
 
 
 @logger.catch
