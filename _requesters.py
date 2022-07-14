@@ -1,18 +1,30 @@
 import asyncio
+import json
 from abc import abstractmethod, ABC
+from json import JSONDecodeError
 
 import aiohttp
 import aiohttp.client_exceptions
 import aiohttp.http_exceptions
 
-from datastructurepack import DataStructure
-from errors_reporter import MessageReporter
 from config import logger
 
 
 class RequestSender(ABC):
+    """
+    ABC class with errors hadling.
+
+    Attributes
+        url: str = ''
+
+        token: str = ''
+
+        _params: dict = {}
+
+    """
 
     def __init__(self, url: str = ''):
+        self.token: str = ''
         self.url: str = url
         self._params: dict = {}
 
@@ -20,12 +32,11 @@ class RequestSender(ABC):
     async def _send(self, *args, **kwargs):
         pass
 
-    async def send_request(self) -> 'DataStructure':
+    async def send_request(self) -> dict:
         self._params: dict = {
             'url': self.url,
         }
 
-        text: str = ''
         session_params: dict = {
             "trust_env": True,
             "connector": aiohttp.TCPConnector(),
@@ -34,7 +45,9 @@ class RequestSender(ABC):
         try:
 
             async with aiohttp.ClientSession(**session_params) as session:
-                logger.info(self._params)
+                if self.token:
+                    session.headers['authorization']: str = self.token
+                logger.debug(self._params)
                 answer: dict = await self._send(session)
         except aiohttp.client_exceptions.ClientConnectorError as err:
             logger.error(f"aiohttp.client_exceptions.ClientConnectorError: {err}")
@@ -66,47 +79,74 @@ class RequestSender(ABC):
             logger.error(text)
 
         status = answer.get("status")
-        logger.success(f"{answer=}")
+        logger.debug(f"Answer: {answer}")
         if status == 204:
-            return DataStructure(status=status, data={}, message='No content', )
+            return dict(data={}, message='No content')
         elif status in range(400, 500):
-            return DataStructure(status=status, data={}, message=f'Error {status}')
+            return dict(data={}, message=f'Error {status}')
         elif status not in range(200, 300):
             error_text: str = (
                 f"\nStatus: {status}"
                 f"\nUrl: {self.url}")
             logger.error(error_text)
-            answer: dict = await MessageReporter(answer=answer).handle_errors()
+        answer: dict = await self.__get_answer_data(answer)
 
-        data: dict = answer.get("answer_data")
-        if data and isinstance(data, dict):
-            if all((data.get("status"), data.get("code"))):
-                return DataStructure(**data)
+        return {'data': answer.get("answer_data")}
 
-        return DataStructure(status=status, data=data)
+    @logger.catch
+    async def __get_answer_data(self, answer: dict) -> dict:
+        """Parse data from answer
+
+        :returns: Modified answer
+        """
+
+        answer_data: str = answer.get("answer_data")
+        data = {}
+        if not answer_data:
+            answer.update(answer_data=data)
+
+            return answer
+
+        if isinstance(answer_data, str):
+            try:
+                data: dict = json.loads(answer_data)
+            except JSONDecodeError as err:
+                logger.error(
+                    f"\nJSON ERROR: {err}"
+                    f"\nAnswer data: {answer_data}"
+                )
+        elif isinstance(answer_data, (dict, list)):
+            data = answer_data
+
+        answer.update(answer_data=data)
+
+        return answer
 
 
 class GetRequest(RequestSender):
+    """Класс для отправки GET запросов"""
 
     async def _send(self, session) -> dict:
         async with session.get(**self._params) as response:
             return {
                 "status": response.status,
-                "answer_data": await response.json()
+                "answer_data": await response.text()
             }
 
 
 class PostRequest(RequestSender):
 
-    def __init__(self, token: str, data: dict = None, url: str = ''):
-        super().__init__(url)
-        self._data_for_send: dict = data
-        self.token = token
+    def __init__(self):
+        super().__init__()
+        self._data_for_send: dict = {}
+        self.proxy: str = ''
 
     async def _send(self, session) -> dict:
         """Отправляет данные в дискорд канал"""
-        session.headers['authorization']: str = self.token
+
         self._params.update(json=self._data_for_send)
+        if self.proxy:
+            self._params.update(proxy=self.proxy)
         async with session.post(**self._params) as response:
             return {
                 "status": response.status,

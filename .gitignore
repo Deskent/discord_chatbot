@@ -133,3 +133,6 @@ dmypy.json
 /frequency.txt
 /aaa.json
 .idea/
+/readme.txt
+*.json
+parsed.txt

@@ -7,6 +7,8 @@ class UserStates(StatesGroup):
     """Машина состояний для управления пользователями."""
     frequency_post = State()
     in_work = State()
+    normal_start = State()
+    parse_start = State()
 
 
 

@@ -28,14 +28,20 @@ class BaseMenu:
 
         return default_keyboard().add(KeyboardButton(cls.cancel_key))
 
+    @classmethod
+    @logger.catch
+    def cancel_keyboard(cls):
+        return BaseMenu.keyboard()
+
 
 @dataclass(frozen=True)
 class StartMenu(BaseMenu):
     """Стандартное пользовательское меню"""
 
     start: str = 'Start'
-    stop: str = 'Stop'
-    set_frequency: str = 'Установить частоту'
+    silent: str = 'Start (mute)'
+    parsing: str = 'Parsing'
+    parsing_silent: str = 'Parsing (mute)'
 
     @classmethod
     @logger.catch
@@ -44,6 +50,7 @@ class StartMenu(BaseMenu):
 
         return default_keyboard().add(
             KeyboardButton(cls.start),
-            KeyboardButton(cls.stop),
-            KeyboardButton(cls.set_frequency)
+            KeyboardButton(cls.silent),
+            KeyboardButton(cls.parsing),
+            KeyboardButton(cls.parsing_silent),
         )

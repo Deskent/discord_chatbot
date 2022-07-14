@@ -1,40 +1,138 @@
 import os.path
 import random
-from typing import List
+from typing import List, Dict
 
-from config import settings, logger
-from message_sender import MessageSender
+from _requesters import PostRequest, GetRequest
+from config import logger, settings, DISCORD_BASE_URL
+
+from vocabulary import Vocabulary
 
 
 class DiscordBot:
-    def __init__(self):
-        self.tokens: List[str] = []
-        self.proxies: List[str] = []
+    """Send messages to channel from vocabulary
+
+    Attributes
+        channel: int
+
+        vocabulary: str = ''
+
+    Methods
+        start
+    """
+
+    def __init__(self, channel: int, vocabulary: str = ''):
+        self._tokens: List[str] = []
+        self._proxy: List[str] = []
+        self.channel: int = channel
+        self.vocabulary: str = vocabulary if vocabulary else settings.VOCABULARY_PATH_FILE
+
+    @logger.catch
+    async def start(self) -> dict:
+        if not self._tokens:
+            tokens: List[str] = await self._read_files_start_text(settings.TOKENS_PATH_FILE)
+            if not tokens:
+                text = f'No tokens in file {settings.TOKENS_PATH_FILE}'
+                logger.warning(text)
+                return {'error': text}
+            self._tokens = tokens
+        try:
+            self._proxy: str = await self._get_random_proxy()
+        except ValueError as err:
+            text = 'Прокси должна быть в формате user:password:ip_address:port'
+            logger.exception(f"{text} {err}")
+            return {'error': text}
+        token: str = self._tokens.pop().strip()
+        text_to_send: str = Vocabulary.get_message(file_name=self.vocabulary)
+        if not text_to_send:
+            text = f'Vocabulary error'
+            logger.warning(text)
+            return {'error': text}
+        payload = {
+            'token': token,
+            'proxy': self._proxy,
+            'channel': self.channel,
+            'text_to_send': text_to_send
+        }
+
+        result: dict = await MessageSender(**payload).send_message_to_discord()
+        logger.info(f'Send result: {result}')
+        result_data: dict = result.get('data', {})
+        if result_data:
+            return {'result': result_data}
+        return {'error': result.get("message")}
 
     @staticmethod
+    @logger.catch
     async def _read_files_start_text(file_name: str) -> List[str]:
         if not os.path.exists(file_name):
             logger.error(f'{file_name} file not found')
             return []
         with open(file_name, encoding="utf-8") as f:
-            tokens: List[str] = f.readlines()
-        return tokens
+            result: List[str] = f.readlines()
+        return result
 
-    async def start(self) -> dict:
-        if not self.tokens:
-            tokens: List[str] = await self._read_files_start_text(settings.TOKENS_PATH_FILE)
-            if not tokens:
-                text = 'No tokens in file'
-                logger.warning(text)
-                return {'error': text}
-            self.tokens = tokens
-        self.proxies = await self._read_files_start_text(settings.PROXIES_PATH_FILE)
-        payload = {
-            'token': self.tokens.pop().strip(),
-            'proxy': random.choice(self.proxies).strip(),
-            'channel': 932256559394861079
+    @logger.catch
+    async def _get_random_proxy(self) -> str:
+        proxies: List[str] = await self._read_files_start_text(settings.PROXIES_PATH_FILE)
+        random_proxy: str = random.choice(proxies)
+        user, password, ip, port = random_proxy.strip().split(':')
+
+        return f"http://{user}:{password}@{ip}:{port}/"
+
+
+class ParserBot(DiscordBot, GetRequest):
+
+    def __init__(self, parse_channel: int, channel: int):
+        super().__init__(channel)
+        self.parse_channel: int = parse_channel
+        self.vocabulary: str = settings.PARSED_PATH_FILE
+        self.token = settings.PARSING_TOKEN
+
+    async def start(self):
+        await self._parse_data()
+        return await super(ParserBot, self).start()
+
+    async def _parse_data(self):
+        if not self.token:
+            text = 'Не задан токен для парсинга PARSING_TOKEN в файле .env'
+            logger.error(f"{text}")
+            return {'error': text}
+        self.url = DISCORD_BASE_URL + f'{self.parse_channel}/messages?limit={5}'
+        data: Dict[str, List[dict]] = await self.send_request()
+        logger.debug(data)
+        self._save_data(data)
+
+    def _save_data(self, data: Dict[str, List[dict]]):
+        messages: List[dict] = data.get('data')
+        results: List[str] = [f"{message['content']}\n" for message in messages if message.get('content')]
+        with open(self.vocabulary, 'a', encoding='utf-8') as f:
+            f.writelines(results)
+
+
+class MessageSender(PostRequest):
+    """Отправляет сообщение в дискорд-канал"""
+
+    def __init__(self, token: str, proxy: str, channel: int, text_to_send: str):
+        super().__init__()
+        self.token: str = token
+        self.proxy: str = proxy
+        self.channel: int = channel
+        self._data_for_send: dict = {}
+        self.text_to_send: str = text_to_send
+
+    @logger.catch
+    async def send_message_to_discord(self) -> dict:
+        """Отправляет данные в канал дискорда, возвращает результат отправки."""
+
+        text: str = (
+            f"\nSend to channel: [{self.channel}]:"
+            f"\tMessage text: [{self.text_to_send}]"
+        )
+        logger.debug(text)
+        self._data_for_send = {
+            "content": self.text_to_send,
+            "tts": "false"
         }
+        self.url = DISCORD_BASE_URL + f'{self.channel}/messages?'
 
-        result: dict = await MessageSender(**payload).send_message_to_discord()
-        logger.info(f'Send result: {result}')
-        return {'result': result}
+        return await self.send_request()
