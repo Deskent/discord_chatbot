@@ -42,6 +42,7 @@ class StartMenu(BaseMenu):
     silent: str = 'Start (mute)'
     parsing: str = 'Parsing'
     parsing_silent: str = 'Parsing (mute)'
+    pause: str = 'Set pause range'
 
     @classmethod
     @logger.catch
@@ -53,4 +54,5 @@ class StartMenu(BaseMenu):
             KeyboardButton(cls.silent),
             KeyboardButton(cls.parsing),
             KeyboardButton(cls.parsing_silent),
+            KeyboardButton(cls.pause)
         )

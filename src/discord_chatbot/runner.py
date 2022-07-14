@@ -1,4 +1,5 @@
 import datetime
+import os
 
 from aiogram import executor
 
@@ -33,10 +34,21 @@ async def on_shutdown(dp) -> None:
     logger.warning("BOT down.")
 
 
+def creating_files():
+    print('Creating files...')
+    files = (
+        settings.TOKENS_PATH_FILE, settings.VOCABULARY_PATH_FILE, settings.PROXIES_PATH_FILE,
+        settings.PARSED_PATH_FILE, settings.VOCABULARY_PATH_FILE
+    )
+    for filename in files:
+        if not os.path.exists(filename):
+            open(filename, 'a').close()
+
+
 @logger.catch
 def start_bot() -> None:
     """Инициализация и старт бота"""
-
+    creating_files()
     executor.start_polling(
         dispatcher=dp,
         skip_updates=True,

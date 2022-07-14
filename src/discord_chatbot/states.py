@@ -9,6 +9,7 @@ class UserStates(StatesGroup):
     in_work = State()
     normal_start = State()
     parse_start = State()
+    set_pause = State()
 
 
 

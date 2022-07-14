@@ -13,4 +13,7 @@ from runner import start_bot
 
 if success.returncode:
     exit(success.returncode)
-start_bot()
+
+
+if __name__ == '__main__':
+    start_bot()

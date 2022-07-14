@@ -51,6 +51,43 @@ async def hello_handler(message: Message):
 
 
 @logger.catch
+async def pause_request_handler(message: Message) -> None:
+    """
+    Asks pause
+    """
+
+    await message.answer(
+        "Введите диапазон паузы между сообщениями в формате 120-280",
+        reply_markup=StartMenu.cancel_keyboard(),
+    )
+    await UserStates.set_pause.set()
+
+
+@logger.catch
+async def set_pause_handler(message: Message, state: FSMContext) -> None:
+    """
+    Set pause
+    """
+
+    pause = message.text.split('-')
+    min_pause: int = check_is_int(pause[0])
+    max_pause: int = check_is_int(pause[1])
+    if not all((min_pause, max_pause)):
+        await message.answer(
+            "Ошибка ввода. Введите диапазон паузы между сообщениями в формате 120-280",
+            reply_markup=StartMenu.cancel_keyboard(),
+        )
+        return
+    settings.MIN_PAUSE = min_pause
+    settings.MAX_PAUSE = max_pause
+    await message.answer(
+        f"Диапазон установлен: {min_pause}-{max_pause}",
+        reply_markup=StartMenu.keyboard(),
+    )
+    await state.finish()
+
+
+@logger.catch
 async def link_request_handler(message: Message, state: FSMContext) -> None:
     """
     Asks link for guild/channel
@@ -75,6 +112,7 @@ async def link_request_handler(message: Message, state: FSMContext) -> None:
 @logger.catch
 async def menu_selector_message(message: Message, state: FSMContext) -> None:
     """"""
+
     working_mode: str = await state.get_state()
     working_mode: str = working_mode.strip().split(':')[-1]
     try:
@@ -90,8 +128,6 @@ async def menu_selector_message(message: Message, state: FSMContext) -> None:
             "Проверьте ссылку на канал и попробуйте ещё раз.",
             reply_markup=StartMenu.cancel_keyboard())
         return
-    await UserStates.in_work.set()
-    current_state: str = await state.get_state()
     state_data: dict = await state.get_data()
     silent: bool = state_data.get('silent', False)
     await _send_message(
@@ -106,6 +142,8 @@ async def menu_selector_message(message: Message, state: FSMContext) -> None:
 
     }
     worker: 'DiscordBot' = workers[working_mode]
+    await UserStates.in_work.set()
+    current_state: str = await state.get_state()
     while current_state == UserStates.in_work.state:
         delay: int = random.randint(settings.MIN_PAUSE, settings.MAX_PAUSE)
         result_data: dict = await worker.start()
@@ -129,7 +167,6 @@ async def menu_selector_message(message: Message, state: FSMContext) -> None:
         logger.debug(f"Sleep: {delay} seconds")
         await asyncio.sleep(delay)
         current_state: str = await state.get_state()
-        logger.debug(current_state)
 
     await state.finish()
 
@@ -161,6 +198,8 @@ def main_register_handlers(dp: Dispatcher) -> None:
     dp.register_message_handler(link_request_handler, Text(equals=[
         StartMenu.start, StartMenu.silent, StartMenu.parsing, StartMenu.parsing_silent
     ]))
+    dp.register_message_handler(pause_request_handler, Text(equals=[StartMenu.pause]))
+    dp.register_message_handler(set_pause_handler, state=UserStates.set_pause)
     dp.register_message_handler(menu_selector_message, state=UserStates.normal_start)
     dp.register_message_handler(menu_selector_message, state=UserStates.parse_start)
     dp.register_message_handler(default_message)

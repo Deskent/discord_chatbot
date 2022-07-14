@@ -2,7 +2,7 @@ import os.path
 import random
 from typing import List, Dict
 
-from _requesters import PostRequest, GetRequest
+from requesters import PostRequest, GetRequest
 from config import logger, settings, DISCORD_BASE_URL
 
 from vocabulary import Vocabulary
