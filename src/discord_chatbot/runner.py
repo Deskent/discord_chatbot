@@ -44,6 +44,7 @@ def _creating_files():
     for filename in files:
         if not os.path.exists(filename):
             open(filename, 'a').close()
+    print('Creating files... OK')
 
 
 @logger.catch

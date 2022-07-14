@@ -1,12 +1,13 @@
 """Модуль с основными обработчиками команд и сообщений"""
 import asyncio
 import random
+from typing import Tuple
 
 from aiogram.dispatcher.filters import Text
 from aiogram.types import Message, CallbackQuery
 from aiogram.dispatcher import FSMContext
 
-from discord_chatbot.discord_bot import DiscordBot, ParserBot
+from discord_chatbot.discord_bot import DiscordBot, Parser
 from discord_chatbot.states import UserStates
 from discord_chatbot.utils import check_is_int
 from discord_chatbot.keyboards import StartMenu
@@ -88,11 +89,11 @@ async def set_pause_handler(message: Message, state: FSMContext) -> None:
 
 
 @logger.catch
-async def link_request_handler(message: Message, state: FSMContext) -> None:
+async def link_request_handler(message: Message) -> None:
     """
     Asks link for guild/channel
     """
-    silent: bool = message.text == StartMenu.silent or message.text == StartMenu.parsing_silent
+
     await message.answer(
         "Введите ссылку на канал в виде: "
         "https://discord.com/channels/932034587264167975/932034858906401842",
@@ -100,21 +101,15 @@ async def link_request_handler(message: Message, state: FSMContext) -> None:
         disable_web_page_preview=True
     )
     states_ = {
-        StartMenu.silent: UserStates.normal_start,
-        StartMenu.start: UserStates.normal_start,
-        StartMenu.parsing: UserStates.parse_start,
-        StartMenu.parsing_silent: UserStates.parse_start
+        StartMenu.start_parsed: UserStates.normal_start,
+        StartMenu.start_vocabulary: UserStates.normal_start,
+        StartMenu.parsing: UserStates.parsing,
     }
     await states_[message.text].set()
-    await state.update_data(silent=silent)
 
 
 @logger.catch
-async def menu_selector_message(message: Message, state: FSMContext) -> None:
-    """"""
-
-    working_mode: str = await state.get_state()
-    working_mode: str = working_mode.strip().split(':')[-1]
+def _get_guild_and_channel(message: Message) -> Tuple[int, int]:
     try:
         guild, channel = message.text.rsplit('/', maxsplit=3)[-2:]
     except ValueError as err:
@@ -123,30 +118,66 @@ async def menu_selector_message(message: Message, state: FSMContext) -> None:
         channel: str = ''
     guild: int = check_is_int(guild)
     channel: int = check_is_int(channel)
+
+    return guild, channel
+
+
+@logger.catch
+async def parser_handler(message: Message, state: FSMContext) -> None:
+    """"""
+
+    guild, channel = _get_guild_and_channel(message)
     if not all((guild, channel)):
         await message.answer(
             "Проверьте ссылку на канал и попробуйте ещё раз.",
             reply_markup=StartMenu.cancel_keyboard())
         return
-    state_data: dict = await state.get_data()
-    silent: bool = state_data.get('silent', False)
-    await _send_message(
-        message=message,
-        silent=silent,
+    parse_result: dict = await Parser(channel=channel).parse_data()
+    count = parse_result['result']
+    await message.answer(
+        f"Спарсил {count} сообщений из чата {channel}",
+        reply_markup=StartMenu.keyboard()
+    )
+    await state.finish()
+
+
+@logger.catch
+async def _get_vocabulary(state: FSMContext) -> str:
+    working_mode: str = await state.get_state()
+    working_mode: str = working_mode.strip().split(':')[-1]
+    vocabulary: str = settings.VOCABULARY_PATH_FILE
+    if working_mode == UserStates.parsed_start.state:
+        vocabulary = settings.PARSED_PATH_FILE
+    return vocabulary
+
+
+@logger.catch
+async def menu_selector_message(message: Message, state: FSMContext) -> None:
+    """"""
+
+    vocabulary: str = await _get_vocabulary(state)
+    guild, channel = _get_guild_and_channel(message)
+    if not all((guild, channel)):
+        await message.answer(
+            "Проверьте ссылку на канал и попробуйте ещё раз.",
+            reply_markup=StartMenu.cancel_keyboard())
+        return
+    await message.answer(
         text=f'Начинаю работу.',
         reply_markup=StartMenu.cancel_keyboard()
     )
-    workers = {
-        'normal_start': DiscordBot(channel=channel),
-        'parse_start': ParserBot(channel=channel, parse_channel=channel),
-
-    }
-    worker: 'DiscordBot' = workers[working_mode]
     await UserStates.in_work.set()
+    await run(message, state, channel, vocabulary)
+    await state.finish()
+    await message.answer(text=f'Закончил работу.', reply_markup=StartMenu.keyboard())
+
+
+async def run(message: Message, state: FSMContext, channel: int, vocabulary: str):
     current_state: str = await state.get_state()
+
     while current_state == UserStates.in_work.state:
         delay: int = random.randint(settings.MIN_PAUSE, settings.MAX_PAUSE)
-        result_data: dict = await worker.start()
+        result_data: dict = await DiscordBot(channel=channel, vocabulary=vocabulary).start()
         result: dict = result_data.get('result')
         if result:
             text = (
@@ -154,9 +185,7 @@ async def menu_selector_message(message: Message, state: FSMContext) -> None:
                 f"\nотправил: [{result.get('content')}]"
                 f"\nв канал {result.get('channel_id')}"
             )
-            await _send_message(
-                message=message,
-                silent=silent,
+            await message.answer(
                 text=f'Результат выполнения: {text}',
                 reply_markup=StartMenu.cancel_keyboard()
             )
@@ -167,16 +196,6 @@ async def menu_selector_message(message: Message, state: FSMContext) -> None:
         logger.debug(f"Sleep: {delay} seconds")
         await asyncio.sleep(delay)
         current_state: str = await state.get_state()
-
-    await state.finish()
-
-    await _send_message(message, silent, text=f'Закончил работу.', reply_markup=StartMenu.keyboard())
-
-
-@logger.catch
-async def _send_message(message: Message, silent: bool, text: str, reply_markup):
-    if not silent:
-        await message.answer(text, reply_markup=reply_markup)
 
 
 @logger.catch
@@ -196,10 +215,11 @@ def main_register_handlers(dp: Dispatcher) -> None:
         startswith=[StartMenu.cancel_key], ignore_case=True), state="*")
     dp.register_message_handler(hello_handler, commands=["start"])
     dp.register_message_handler(link_request_handler, Text(equals=[
-        StartMenu.start, StartMenu.silent, StartMenu.parsing, StartMenu.parsing_silent
+        StartMenu.start_vocabulary, StartMenu.parsing, StartMenu.start_parsed
     ]))
     dp.register_message_handler(pause_request_handler, Text(equals=[StartMenu.pause]))
     dp.register_message_handler(set_pause_handler, state=UserStates.set_pause)
+    dp.register_message_handler(menu_selector_message, state=UserStates.parsed_start)
     dp.register_message_handler(menu_selector_message, state=UserStates.normal_start)
-    dp.register_message_handler(menu_selector_message, state=UserStates.parse_start)
+    dp.register_message_handler(parser_handler, state=UserStates.parsing)
     dp.register_message_handler(default_message)

@@ -37,10 +37,9 @@ class BaseMenu:
 class StartMenu(BaseMenu):
     """Стандартное пользовательское меню"""
 
-    start: str = 'Start'
-    silent: str = 'Start (mute)'
-    parsing: str = 'Parsing'
-    parsing_silent: str = 'Parsing (mute)'
+    start_vocabulary: str = 'Start from vocabulary.txt'
+    start_parsed: str = 'Start from parsed.txt'
+    parsing: str = 'Parsing from chat'
     pause: str = 'Set pause range'
 
     @classmethod
@@ -49,9 +48,8 @@ class StartMenu(BaseMenu):
         """Возвращает кнопочки меню для канала из списка"""
 
         return default_keyboard().add(
-            KeyboardButton(cls.start),
-            KeyboardButton(cls.silent),
+            KeyboardButton(cls.start_vocabulary),
+            KeyboardButton(cls.start_parsed),
             KeyboardButton(cls.parsing),
-            KeyboardButton(cls.parsing_silent),
             KeyboardButton(cls.pause)
         )
