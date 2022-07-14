@@ -138,5 +138,5 @@ dmypy.json
 parsed.txt
 /build.sh
 /upload.sh
-/archive/
 /testarchive/
+/discord_chat_bot/

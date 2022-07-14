@@ -35,5 +35,20 @@
   Запрашиваем ссылку на сервер, из которого будем парсить фразы
   (токен PARSING_TOKEN для парсинга должен быть добавлен на сервер)
   Берем токен для парсинга и парсим MESSAGES_COUNT сообщений и сохраняем их в файл parsed.txt.
-  Далее как в режиме 1, только фразы из файла parsed.txt.
+9. Меню:
+    1. Start from vocabulary.txt - берет фразы из файла vocabulary.txt и начинает работу
+    2. Start from parsed.txt - берет фразы из файла parsed.txt и начинает работу
+    3. Parsing from chat - Парсит MESSAGES_COUNT сообщений из заданного чата и добавляет их
+    в файл parsed.txt.
+    4. Set pause range - запрашивает диапазон для паузы
 
+
+В файле .env нужно добавить токен от телеграм бота в поле
+TELEBOT_TOKEN="telegram_bot_token"
+
+свой ID телеграма в поле
+ADMIN="123456789"
+свой ID телеграма можно узнать в боте https://t.me/userinfobot
+
+и дискорд токен для парсинга в поле
+PARSING_TOKEN="discord_parsing_token"
