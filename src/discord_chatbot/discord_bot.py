@@ -80,10 +80,11 @@ class DiscordBot:
         return f"http://{user}:{password}@{ip}:{port}/"
 
 
-class Parser(DiscordBot, GetRequest):
+class Parser(GetRequest):
 
     def __init__(self, channel: int):
-        super().__init__(channel)
+        super().__init__()
+        self.channel: int = channel
         self.vocabulary: str = settings.PARSED_PATH_FILE
         self.token = settings.PARSING_TOKEN
 
