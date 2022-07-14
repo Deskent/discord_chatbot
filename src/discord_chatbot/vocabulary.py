@@ -1,7 +1,7 @@
 import os
 import random
 
-from config import logger, settings
+from discord_chatbot.config import logger, settings
 
 
 class Vocabulary:

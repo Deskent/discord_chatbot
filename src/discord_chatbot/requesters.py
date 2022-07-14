@@ -7,7 +7,7 @@ import aiohttp
 import aiohttp.client_exceptions
 import aiohttp.http_exceptions
 
-from config import logger
+from discord_chatbot.config import logger
 
 
 class RequestSender(ABC):

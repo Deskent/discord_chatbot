@@ -7,10 +7,13 @@ command = [
     'python3 -m pip install -r requirements.txt'
 ]
 print("Install dependents...")
-success = subprocess.run(command, stdout=subprocess.DEVNULL, shell=True)
+success = subprocess.run(command, shell=True)
 
-from runner import start_bot
+from discord_chatbot.runner import start_bot
 
 if success.returncode:
     exit(success.returncode)
-start_bot()
+
+
+if __name__ == '__main__':
+    start_bot()

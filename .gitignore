@@ -136,3 +136,7 @@ dmypy.json
 /readme.txt
 *.json
 parsed.txt
+/build.sh
+/upload.sh
+/archive/
+/testarchive/

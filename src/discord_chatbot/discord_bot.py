@@ -2,10 +2,10 @@ import os.path
 import random
 from typing import List, Dict
 
-from _requesters import PostRequest, GetRequest
-from config import logger, settings, DISCORD_BASE_URL
+from discord_chatbot.requesters import PostRequest, GetRequest
+from discord_chatbot.config import logger, settings, DISCORD_BASE_URL
 
-from vocabulary import Vocabulary
+from discord_chatbot.vocabulary import Vocabulary
 
 
 class DiscordBot:
@@ -20,11 +20,11 @@ class DiscordBot:
         start
     """
 
-    def __init__(self, channel: int, vocabulary: str = ''):
+    def __init__(self, channel: int, vocabulary: str):
         self._tokens: List[str] = []
         self._proxy: List[str] = []
         self.channel: int = channel
-        self.vocabulary: str = vocabulary if vocabulary else settings.VOCABULARY_PATH_FILE
+        self.vocabulary: str = vocabulary
 
     @logger.catch
     async def start(self) -> dict:
@@ -55,7 +55,7 @@ class DiscordBot:
         }
 
         result: dict = await MessageSender(**payload).send_message_to_discord()
-        logger.info(f'Send result: {result}')
+        logger.debug(f'Send result: {result}')
         result_data: dict = result.get('data', {})
         if result_data:
             return {'result': result_data}
@@ -80,31 +80,29 @@ class DiscordBot:
         return f"http://{user}:{password}@{ip}:{port}/"
 
 
-class ParserBot(DiscordBot, GetRequest):
+class Parser(DiscordBot, GetRequest):
 
-    def __init__(self, parse_channel: int, channel: int):
+    def __init__(self, channel: int):
         super().__init__(channel)
-        self.parse_channel: int = parse_channel
         self.vocabulary: str = settings.PARSED_PATH_FILE
         self.token = settings.PARSING_TOKEN
 
-    async def start(self):
-        await self._parse_data()
-        return await super(ParserBot, self).start()
-
-    async def _parse_data(self):
+    async def parse_data(self) -> dict:
         if not self.token:
             text = 'Не задан токен для парсинга PARSING_TOKEN в файле .env'
             logger.error(f"{text}")
             return {'error': text}
-        self.url = DISCORD_BASE_URL + f'{self.parse_channel}/messages?limit={5}'
+        limit: int = settings.MESSAGES_COUNT if 1 <= settings.MESSAGES_COUNT <= 100 else 100
+        self.url = DISCORD_BASE_URL + f'{self.channel}/messages?limit={limit}'
         data: Dict[str, List[dict]] = await self.send_request()
-        logger.debug(data)
         self._save_data(data)
+        logger.debug(f"Parsed: {len(data)}")
+        return {'result': len(data['data'])}
 
     def _save_data(self, data: Dict[str, List[dict]]):
         messages: List[dict] = data.get('data')
-        results: List[str] = [f"{message['content']}\n" for message in messages if message.get('content')]
+        results: List[str] = [f"{message['content']}\n" for message in messages if
+                              message.get('content')]
         with open(self.vocabulary, 'a', encoding='utf-8') as f:
             f.writelines(results)
 
