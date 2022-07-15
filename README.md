@@ -22,6 +22,7 @@
         MAX_PAUSE=3600 - максимальное значение для паузы между сообщениями
         ADMIN="123456789" - телеграм id пользователя, которому будет доступен телеграм бот
         PARSING_TOKEN="token_for_chat_parsing" - токен дискорда для парсинга фраз
+        PHRASE_RANDOM=False - если True то берет случайную фразу из словаря, если False - по порядку
      Настройки для имен файлов:
         VOCABULARY_PATH_FILE="vocabulary.txt"
         TOKENS_PATH_FILE="tokens.txt"

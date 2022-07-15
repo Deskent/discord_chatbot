@@ -19,7 +19,8 @@ class Vocabulary:
             cls.__PATH_TO_FILE = file_name
         vocabulary: list = cls.__get_vocabulary()
         try:
-            random.shuffle(vocabulary)
+            if settings.PHRASE_RANDOM:
+                random.shuffle(vocabulary)
             message_text: str = vocabulary.pop(0).strip()
             cls.__set_vocabulary(vocabulary)
         except (ValueError, TypeError, FileNotFoundError) as err:
