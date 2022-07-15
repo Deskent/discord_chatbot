@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     MESSAGES_COUNT: int = 1000
     MIN_PAUSE: int = 1
     MAX_PAUSE: int = 3600
+    PHRASE_RANDOM: bool = False
 
 
 settings = Settings(_env_file='.env', _env_file_encoding='utf-8')
