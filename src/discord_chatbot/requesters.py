@@ -100,7 +100,7 @@ class RequestSender(ABC):
         :returns: Modified answer
         """
 
-        answer_data: str = answer.get("answer_data")
+        answer_data = answer.get("answer_data")
         data = {}
         if not answer_data:
             answer.update(answer_data=data)
