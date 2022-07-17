@@ -83,7 +83,7 @@ class RequestSender(ABC):
         if status == 204:
             return dict(data={}, message='No content')
         elif status in range(400, 500):
-            return dict(data={}, message=f'Error {status}')
+            return dict(data={}, message=f'Token:\n{self.token}\nError {status}')
         elif status not in range(200, 300):
             error_text: str = (
                 f"\nStatus: {status}"
@@ -100,7 +100,7 @@ class RequestSender(ABC):
         :returns: Modified answer
         """
 
-        answer_data: str = answer.get("answer_data")
+        answer_data = answer.get("answer_data")
         data = {}
         if not answer_data:
             answer.update(answer_data=data)

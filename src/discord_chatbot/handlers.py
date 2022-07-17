@@ -174,10 +174,10 @@ async def menu_selector_message(message: Message, state: FSMContext) -> None:
 
 async def run(message: Message, state: FSMContext, channel: int, vocabulary: str):
     current_state: str = await state.get_state()
-
+    discord_bot = DiscordBot(channel=channel, vocabulary=vocabulary)
     while current_state == UserStates.in_work.state:
         delay: int = random.randint(settings.MIN_PAUSE, settings.MAX_PAUSE)
-        result_data: dict = await DiscordBot(channel=channel, vocabulary=vocabulary).start()
+        result_data: dict = await discord_bot.start()
         result: dict = result_data.get('result')
         if result:
             text = (
@@ -190,8 +190,8 @@ async def run(message: Message, state: FSMContext, channel: int, vocabulary: str
                 reply_markup=StartMenu.cancel_keyboard()
             )
         else:
-            error: str = result_data.get('error')
-            await message.answer(f'Ошибка: {error}', reply_markup=StartMenu.keyboard())
+            text: str = result_data.get('error')
+            await message.answer(f'Ошибка: {text}', reply_markup=StartMenu.keyboard())
             break
         logger.debug(f"Sleep: {delay} seconds")
         await asyncio.sleep(delay)
