@@ -83,7 +83,7 @@ class RequestSender(ABC):
         if status == 204:
             return dict(data={}, message='No content')
         elif status in range(400, 500):
-            return dict(data={}, message=f'Error {status}')
+            return dict(data={}, message=f'Token:\n{self.token}\nError {status}')
         elif status not in range(200, 300):
             error_text: str = (
                 f"\nStatus: {status}"
