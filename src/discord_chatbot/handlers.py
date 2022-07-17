@@ -1,6 +1,7 @@
 """Модуль с основными обработчиками команд и сообщений"""
 import asyncio
 import random
+import time
 from typing import Tuple
 
 from aiogram.dispatcher.filters import Text
@@ -194,7 +195,7 @@ async def run(message: Message, state: FSMContext, channel: int, vocabulary: str
             await message.answer(f'Ошибка: {text}', reply_markup=StartMenu.keyboard())
             break
         logger.debug(f"Sleep: {delay} seconds")
-        await asyncio.sleep(delay)
+        time.sleep(delay)
         current_state: str = await state.get_state()
 
 
