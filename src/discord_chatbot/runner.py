@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 import datetime
 import os
 
@@ -14,7 +15,6 @@ main_register_handlers(dp=dp)
 
 @logger.catch
 async def on_startup(_) -> None:
-    """Функция выполняющаяся при старте бота."""
 
     text: str = (
         f"ChatBot started."
@@ -28,14 +28,14 @@ async def on_startup(_) -> None:
 
 @logger.catch
 async def on_shutdown(dp) -> None:
-    """Действия при отключении бота."""
+
     logger.warning("BOT shutting down.")
     await dp.storage.wait_closed()
     logger.warning("BOT down.")
 
 
 def _creating_files():
-    print('Creating files...')
+    logger.info('Creating files...')
 
     files = (
         settings.TOKENS_PATH_FILE, settings.VOCABULARY_PATH_FILE, settings.PROXIES_PATH_FILE,
@@ -44,7 +44,7 @@ def _creating_files():
     for filename in files:
         if not os.path.exists(filename):
             open(filename, 'a').close()
-    print('Creating files... OK')
+    logger.info('Creating files... OK')
 
 
 @logger.catch

@@ -9,6 +9,8 @@ from discord_chatbot.config import logger
 
 
 def default_keyboard() -> ReplyKeyboardMarkup:
+    """Returns default keyboard"""
+
     return ReplyKeyboardMarkup(
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -18,24 +20,27 @@ def default_keyboard() -> ReplyKeyboardMarkup:
 
 @dataclass(frozen=True)
 class BaseMenu:
+    """Base menu"""
     cancel_key: str = 'Отмена'
 
     @classmethod
     @logger.catch
     def keyboard(cls) -> Union[ReplyKeyboardMarkup, InlineKeyboardMarkup]:
-        """Возвращает кнопочку Отмена"""
+        """Returns keyboard"""
 
         return default_keyboard().add(KeyboardButton(cls.cancel_key))
 
     @classmethod
     @logger.catch
     def cancel_keyboard(cls):
+        """Returns cancel keyboard"""
+
         return BaseMenu.keyboard()
 
 
 @dataclass(frozen=True)
 class StartMenu(BaseMenu):
-    """Стандартное пользовательское меню"""
+    """Standart menu"""
 
     start_vocabulary: str = 'Start from vocabulary.txt'
     start_parsed: str = 'Start from parsed.txt'
@@ -45,7 +50,7 @@ class StartMenu(BaseMenu):
     @classmethod
     @logger.catch
     def keyboard(cls) -> 'ReplyKeyboardMarkup':
-        """Возвращает кнопочки меню для канала из списка"""
+        """Returns keyboard"""
 
         return default_keyboard().add(
             KeyboardButton(cls.start_vocabulary),

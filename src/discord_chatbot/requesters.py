@@ -12,20 +12,26 @@ from discord_chatbot.config import logger
 
 class RequestSender(ABC):
     """
-    ABC class with errors hadling.
+    ABC class with errors handling
 
     Attributes
         url: str = ''
 
         token: str = ''
 
+        proxy: str = ''
+
         _params: dict = {}
+
+    Methods
+        send_request
 
     """
 
-    def __init__(self, url: str = ''):
-        self.token: str = ''
+    def __init__(self, url: str = '', token: str = '', proxy: str = ''):
+        self.token: str = token
         self.url: str = url
+        self.proxy: str = proxy
         self._params: dict = {}
 
     @abstractmethod
@@ -33,20 +39,30 @@ class RequestSender(ABC):
         pass
 
     async def send_request(self) -> dict:
+        """
+        Send request to url and handle answer
+
+        :return: Dict {'data': ...} or {'message': ...}
+        """
         self._params: dict = {
             'url': self.url,
         }
+        if self.proxy:
+            self._params.update(proxy=self.proxy)
 
         session_params: dict = {
             "trust_env": True,
             "connector": aiohttp.TCPConnector(),
         }
+        if self.token:
+            session_params.update({
+                'headers': {
+                    'authorization': self.token
+                }
+            })
         answer: dict = {}
         try:
-
             async with aiohttp.ClientSession(**session_params) as session:
-                if self.token:
-                    session.headers['authorization']: str = self.token
                 logger.debug(self._params)
                 answer: dict = await self._send(session)
         except aiohttp.client_exceptions.ClientConnectorError as err:
@@ -124,7 +140,7 @@ class RequestSender(ABC):
 
 
 class GetRequest(RequestSender):
-    """Класс для отправки GET запросов"""
+    """Send GET request"""
 
     async def _send(self, session) -> dict:
         async with session.get(**self._params) as response:
@@ -135,18 +151,14 @@ class GetRequest(RequestSender):
 
 
 class PostRequest(RequestSender):
+    """Send POST request with data"""
 
     def __init__(self):
         super().__init__()
         self._data_for_send: dict = {}
-        self.proxy: str = ''
 
     async def _send(self, session) -> dict:
-        """Отправляет данные в дискорд канал"""
-
         self._params.update(json=self._data_for_send)
-        if self.proxy:
-            self._params.update(proxy=self.proxy)
         async with session.post(**self._params) as response:
             return {
                 "status": response.status,
