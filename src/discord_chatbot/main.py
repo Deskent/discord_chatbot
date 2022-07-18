@@ -1,19 +1,28 @@
 #!/usr/local/bin/python
 # -*- coding: UTF-8 -*-
-import subprocess
+import os
 
-command = [
-    'python3 -m pip install --upgrade pip && '
-    'python3 -m pip install -r requirements.txt'
-]
+from sys import platform
+
+
+python: str = 'python3'
+if platform == "win32":
+    python: str = 'python'
+
+
+command: str = (
+    f'{python} -m pip install --upgrade pip && '
+    f'{python} -m pip install --upgrade discord-chatbot-deskent'
+)
+
 print("Install dependents...")
-success = subprocess.run(command, shell=True)
+status: int = os.system(command)
+success: bool = status == 0
 
-from discord_chatbot.runner import start_bot
-
-if success.returncode:
-    exit(success.returncode)
+from discord_chatbot import start_bot
 
 
 if __name__ == '__main__':
-    start_bot()
+    if success:
+        print("Install dependents... OK")
+        start_bot()
